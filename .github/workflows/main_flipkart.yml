@@ -48,18 +48,16 @@ jobs:
         with:
           name: .net-app
       
-      - name: Login to Azure
+      - name: Azure Login
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_958B4B249B964642B079E31130282A47 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_71AA272BA9994AE48183988A2C7B5618 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2AAAAB2D191C493C99DCC94BF847E0D1 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+
+      - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'Flipkart'
-          slot-name: 'Production'
-          package: .
-          
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ./publish
