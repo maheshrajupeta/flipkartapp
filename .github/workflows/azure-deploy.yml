@@ -1,0 +1,132 @@
+name: Build and Deploy .NET 11 Application
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '11.0.x'
+  AZURE_WEBAPP_NAME: 'flipkart-grabfghngybrgkgm'
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+
+      - name: Setup .NET 11
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+
+
+      - name: Verify .NET Version
+        run: |
+          dotnet --version
+          dotnet --info
+
+
+      - name: Show Project File
+        run: |
+          cat AzureGitHubDemo.csproj
+
+
+      - name: Restore Dependencies
+        run: |
+          dotnet restore AzureGitHubDemo.csproj
+
+
+      - name: Build Application
+        run: |
+          dotnet build AzureGitHubDemo.csproj \
+            --configuration Release \
+            --no-restore
+
+
+      - name: Publish Application
+        run: |
+          dotnet publish AzureGitHubDemo.csproj \
+            --configuration Release \
+            --no-restore \
+            --output ./publish
+
+
+      - name: Check Published Files
+        run: |
+          echo "================================"
+          echo "PUBLISHED FILES"
+          echo "================================"
+
+          find ./publish -type f
+
+          echo ""
+          echo "================================"
+          echo "WWWROOT FILES"
+          echo "================================"
+
+          find ./publish/wwwroot -type f || true
+
+
+      - name: Upload Application
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-app
+          path: ./publish
+
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    steps:
+
+      - name: Download Application
+        uses: actions/download-artifact@v4
+        with:
+          name: dotnet-app
+          path: ./publish
+
+
+      - name: Show Deployment Files
+        run: |
+          echo "================================"
+          echo "DEPLOYMENT FILES"
+          echo "================================"
+
+          find ./publish -type f
+
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+
+      - name: Deploy to Azure
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ./publish
+
+
+      - name: Deployment Complete
+        run: |
+          echo "================================"
+          echo "DEPLOYMENT COMPLETED"
+          echo "================================"
+
+          echo "Application URL:"
+          echo "https://${{ env.AZURE_WEBAPP_NAME }}.westus3-01.azurewebsites.net/"
